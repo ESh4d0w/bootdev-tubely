@@ -1,10 +1,10 @@
 package main
 
 import (
-	"encoding/base64"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -50,12 +50,6 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	imageData, err := io.ReadAll(file)
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Error Reading File", err)
-		return
-	}
-
 	video, err := cfg.db.GetVideo(videoID)
 	if err != nil {
 		respondWithError(w, http.StatusNotFound, "Couldn't get video", err)
@@ -65,10 +59,22 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 		respondWithError(w, http.StatusUnauthorized, "That is not your video", err)
 	}
 
-	base64Thumbnail := base64.StdEncoding.EncodeToString(imageData)
-	base64DataURL := fmt.Sprintf("data:%s;base64,%s", mediaType, base64Thumbnail)
+	assetPath := getAssetPath(video.ID, mediaType)
+	assetDiskPath := cfg.getAssetDiskPath(assetPath)
+	asset, err := os.Create(assetDiskPath)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Error creating Asset", err)
+		return
+	}
+	defer asset.Close()
+	_, err = io.Copy(asset, file)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Error saving file", err)
+		return
+	}
+	url := cfg.getAssetURL(assetPath)
 
-	video.ThumbnailURL = &base64DataURL
+	video.ThumbnailURL = &url
 	video.UpdatedAt = time.Now().UTC()
 	err = cfg.db.UpdateVideo(video)
 	if err != nil {
