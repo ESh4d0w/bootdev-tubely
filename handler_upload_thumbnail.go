@@ -61,9 +61,10 @@ func (cfg *apiConfig) handlerUploadThumbnail(w http.ResponseWriter, r *http.Requ
 	}
 	if video.UserID != userID {
 		respondWithError(w, http.StatusUnauthorized, "That is not your video", err)
+		return
 	}
 
-	assetPath := getAssetPath(video.ID, mediaType)
+	assetPath := getAssetRandPath(mediaType)
 	assetDiskPath := cfg.getAssetDiskPath(assetPath)
 	asset, err := os.Create(assetDiskPath)
 	if err != nil {
