@@ -28,6 +28,10 @@ func (cfg apiConfig) getObjectURL(key string) string {
 	return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", cfg.s3Bucket, cfg.s3Region, key)
 }
 
+func (cfg apiConfig) getDistributedObjectURL(key string) string {
+	return fmt.Sprintf("https://%s/%s", cfg.s3CfDistribution, key)
+}
+
 func (cfg apiConfig) getAssetDiskPath(assetPath string) string {
 	return filepath.Join(cfg.assetsRoot, assetPath)
 }
